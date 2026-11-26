@@ -27,6 +27,7 @@ export const dashboard = {
         // TODO: 2. Cargar los personajes iniciales llamando a loadCharacters()
         await this.loadCharacters();
         // TODO: 3. Renderizar los favoritos iniciales (si existen en el local storage) llamando a renderFavorites()
+        this.renderFavorites();
     },
 
     /**
@@ -46,7 +47,7 @@ export const dashboard = {
                 store.state.filters.name = e.target.value.trim();
                 store.state.currentPage = 1;
                 this.loadCharacters();
-            }, 4000)
+            }, 500)
         });
         // TODO: 2. Escuchar el evento 'change' en el select de filtros (this.elements.filter)
         //          - Actualizar store.state.filters.status con el valor del select y reiniciar store.state.currentPage a 1.
@@ -61,9 +62,23 @@ export const dashboard = {
         //          - Si store.state.currentPage es mayor que 1, restarle 1.
         //          - Llamar a loadCharacters() y hacer scroll hacia arriba (window.scrollTo({ top: 0, behavior: 'smooth' })).
         //
+        this.elements.prevBtn.addEventListener('click', () => {
+            if (store.state.currentPage > 1) {
+                store.state.currentPage--;
+                this.loadCharacters();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
         // TODO: 4. Escuchar el evento 'click' en el botón de página siguiente (this.elements.nextBtn)
         //          - Si store.state.currentPage es menor que store.state.totalPages, sumarle 1.
         //          - Llamar a loadCharacters() y hacer scroll hacia arriba.
+        this.elements.nextBtn.addEventListener('click', () => {
+            if (store.state.currentPage < store.state.totalPages) {
+                store.state.currentPage++;
+                this.loadCharacters();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
     },
 
     /**
@@ -121,8 +136,18 @@ export const dashboard = {
                 </div>  
             `;
 
+            const favBtn = card.querySelector('.fav-btn');
+            favBtn.addEventListener('click', () => {
+                const added = store.toggleFavorite(char);
+                favBtn.classList.toggle('active', added);
+                favBtn.querySelector('span').textContent = added ? 'En Favoritos' : 'Añadir a Favoritos';
+                this.renderFavorites();
+                lucide.createIcons();
+            });
+
             this.elements.grid.appendChild(card);
         })
+        lucide.createIcons();
         // TODO: 3. Para cada personaje, crear un elemento div con la clase 'character-card'.
         
         // TODO: 4. Inyectar el HTML de la tarjeta (usa la plantilla del personaje que viene en recursos/resursos.md).
@@ -158,6 +183,40 @@ export const dashboard = {
         //          - Llamar de nuevo a renderFavorites() y renderGrid() para que toda la interfaz se actualice.
         // TODO: 6. Añadir el elemento creado a favoritesList.
         // TODO: 7. Llamar a lucide.createIcons() para pintar el icono de cierre.
+        if (store.state.favorites.length === 0) {
+            favoritesList.innerHTML = `
+                <div class="empty-favorites">
+                    <p>No favorites yet</p>
+                </div>
+            `;
+            return;
+        }
+
+        favoritesList.innerHTML = '';
+
+        store.state.favorites.forEach(fav => {
+            const item = document.createElement('div');
+            item.className = 'fav-item';
+            item.innerHTML = `
+                <img src="${fav.image}" alt="${fav.name}">
+                <div class="fav-item-info">
+                    <span class="fav-item-name">${fav.name}</span>
+                </div>
+                <button class="remove-fav" data-id="${fav.id}">
+                    <i data-lucide="x"></i>
+                </button>
+            `;
+
+            item.querySelector('.remove-fav').addEventListener('click', () => {
+                store.toggleFavorite(fav);
+                this.renderFavorites();
+                this.renderGrid();
+            });
+
+            favoritesList.appendChild(item);
+        });
+
+        lucide.createIcons();
     },
 
     /**
@@ -167,6 +226,9 @@ export const dashboard = {
         // TODO: 1. Deshabilitar o habilitar this.elements.prevBtn si estamos en la página 1 (store.state.currentPage <= 1).
         // TODO: 2. Deshabilitar o habilitar this.elements.nextBtn si estamos en la página máxima (store.state.currentPage >= store.state.totalPages).
         // TODO: 3. Cambiar el textContent de this.elements.pageInfo para mostrar la página actual y el total (Ej: "Página X de Y").
+        this.elements.prevBtn.disabled = store.state.currentPage <= 1;
+        this.elements.nextBtn.disabled = store.state.currentPage >= store.state.totalPages;
+        this.elements.pageInfo.textContent = `Página ${store.state.currentPage} de ${store.state.totalPages}`;
     },
 
     /**

@@ -22,7 +22,7 @@ export async function getCharacters(page = 1, filters = {}) {
         const response = await fetch(url);
         return await response.json();
     }catch(e){
-        return [];
+        return { error: e };
     }
     // TODO: 5. Convertir la respuesta a JSON y retornarla. En caso de error, capturarlo y retornar un objeto con el error.
 }
